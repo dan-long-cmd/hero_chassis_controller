@@ -15,17 +15,14 @@ find_package(catkin REQUIRED
     roscpp
     sensor_msgs
     std_msgs
-    control_toolbox
     roslint
     controller_interface
     hardware_interface
     forward_command_controller
     pluginlib
     realtime_tools
-    angles
     control_msgs
     realtime_tools
-    urdf
     )
 
 ## Find system libraries
@@ -57,10 +54,8 @@ catkin_package(
     forward_command_controller
     pluginlib
     control_msgs
-    control_toolbox
     realtime_tools
     std_msgs
-    urdf
     DEPENDS
     ## find_package(Eigen3) provides a non standard EIGEN3_INCLUDE_DIR instead of Eigen3_INCLUDE_DIRS.
     ## Therefore, the DEPEND does not work as expected and we need to add the directory to the INCLUDE_DIRS

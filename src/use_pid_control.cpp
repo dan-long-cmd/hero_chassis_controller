@@ -5,10 +5,10 @@
 namespace hero_control_4 {
 
 // 初始化：分配硬件句柄，加载PID参数
-bool WheelController::init(hardware_interface::EffortJointInterface* robot,
+bool WheelController::init(hardware_interface::EffortJointInterface* effort_joint_interface,
           ros::NodeHandle& n,
           const std::string& joint_name) {
-  joint_ = robot->getHandle(joint_name);
+  joint_ = effort_joint_interface->getHandle(joint_name);
   // 注意这里，直接把命名空间传给它自己
   if (!pid_.init(ros::NodeHandle(n, "pid/" + joint_name)))
   return false;
@@ -50,7 +50,7 @@ ChassisController::~ChassisController()
   sub_command_.shutdown();
 }
 
-bool ChassisController::init(hardware_interface::EffortJointInterface *robot, ros::NodeHandle &n)
+bool ChassisController::init(hardware_interface::EffortJointInterface *effort_joint_interface, ros::NodeHandle &n)
 {
   // Get joint name from parameter server
   std::vector<std::string> joint_names;
@@ -58,10 +58,10 @@ bool ChassisController::init(hardware_interface::EffortJointInterface *robot, ro
     ROS_ERROR("No joint given (namespace: %s)", n.getNamespace().c_str());
     return false;
   }
-  left_front_.init(robot, n, joint_names[0]);
-  right_front_.init(robot, n, joint_names[1]);
-  left_back_.init(robot, n, joint_names[2]);
-  right_back_.init(robot, n, joint_names[3]);
+  left_front_.init(effort_joint_interface, n, joint_names[0]);
+  right_front_.init(effort_joint_interface, n, joint_names[1]);
+  left_back_.init(effort_joint_interface, n, joint_names[2]);
+  right_back_.init(effort_joint_interface, n, joint_names[3]);
   // Start command subscriber
   sub_command_ = n.subscribe<std_msgs::Float64>("command", 1, &ChassisController::setCommandCB, this);
 

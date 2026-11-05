@@ -1,3 +1,7 @@
+#ifndef USE_PID_CONTROL_H
+#define USE_PID_CONTROL_H
+
+
 #pragma once
 #include <control_msgs/JointControllerState.h>
 #include <control_toolbox/pid.h>
@@ -33,7 +37,7 @@ public:
   ChassisController();
   ~ChassisController();
 
-  bool init(hardware_interface::EffortJointInterface *robot, ros::NodeHandle &n);
+  bool init(hardware_interface::EffortJointInterface *effort_joint_interface, ros::NodeHandle &n);
   //void setCommand(double cmd);
   //void getCommand(double & cmd);
   void starting(const ros::Time& time);
@@ -56,3 +60,5 @@ private:
   void setCommandCB(const std_msgs::Float64ConstPtr& msg);
 };
 } // namespace
+
+#endif

@@ -10,9 +10,7 @@
   <!-- buildtool_depend: dependencies of the build process -->
   <buildtool_depend>catkin</buildtool_depend>
   <!-- build_depend: dependencies only used in source files -->
-  <build_depend>boost</build_depend>
   <!-- depend: build, export, and execution dependency -->
-  <depend>eigen</depend>
   <depend>roscpp</depend>
   <depend>sensor_msgs</depend>
   <depend>roslint</depend>
@@ -22,10 +20,8 @@
   <depend>rm_description_for_task</depend>
   <depend>forward_command_controller</depend>
   <depend>control_msgs</depend>
-  <depend>control_toolbox</depend>
   <depend>realtime_tools</depend>
   <depend>std_msgs</depend>
-  <depend>urdf</depend>
 
 
   <export>
