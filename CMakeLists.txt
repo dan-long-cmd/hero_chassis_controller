@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(ros_package_template)
+project(hero_chassis_controller)
 
 ## Use C++14
 set(CMAKE_CXX_STANDARD 14)
@@ -14,7 +14,18 @@ find_package(catkin REQUIRED
     COMPONENTS
     roscpp
     sensor_msgs
+    std_msgs
+    control_toolbox
     roslint
+    controller_interface
+    hardware_interface
+    forward_command_controller
+    pluginlib
+    realtime_tools
+    angles
+    control_msgs
+    realtime_tools
+    urdf
     )
 
 ## Find system libraries
@@ -36,10 +47,20 @@ catkin_package(
     ## This is only necessary because Eigen3 sets a non-standard EIGEN3_INCLUDE_DIR variable
     ${EIGEN3_INCLUDE_DIR}
     LIBRARIES
-    ${PROJECT_NAME}_core
+    ${PROJECT_NAME}
     CATKIN_DEPENDS
     roscpp
     sensor_msgs
+    roslint
+    controller_interface
+    hardware_interface
+    forward_command_controller
+    pluginlib
+    control_msgs
+    control_toolbox
+    realtime_tools
+    std_msgs
+    urdf
     DEPENDS
     ## find_package(Eigen3) provides a non standard EIGEN3_INCLUDE_DIR instead of Eigen3_INCLUDE_DIRS.
     ## Therefore, the DEPEND does not work as expected and we need to add the directory to the INCLUDE_DIRS
@@ -65,34 +86,26 @@ include_directories(
 )
 
 ## Declare a cpp library
-add_library(${PROJECT_NAME}_core
-    src/Algorithm.cpp
-    )
-target_compile_features(${PROJECT_NAME}_core INTERFACE cxx_std_11)
+add_library(${PROJECT_NAME}
+        src/use_pid_control.cpp
+)
+target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES})
 
 ## Declare cpp executables
-add_executable(${PROJECT_NAME}
-    src/${PROJECT_NAME}_node.cpp
-    src/RosPackageTemplate.cpp
-    )
-target_compile_features(${PROJECT_NAME} INTERFACE cxx_std_11)
+
 
 ## Add dependencies to exported targets, like ROS msgs or srvs
-add_dependencies(${PROJECT_NAME}_core
-    ${catkin_EXPORTED_TARGETS}
-    )
+
 
 add_dependencies(${PROJECT_NAME}
     ${catkin_EXPORTED_TARGETS}
     )
 
 ## Specify libraries to link executable targets against
-target_link_libraries(${PROJECT_NAME}_core
-    ${catkin_LIBRARIES}
-    )
+
 
 target_link_libraries(${PROJECT_NAME}
-    ${PROJECT_NAME}_core
+
     ${catkin_LIBRARIES}
     )
 
@@ -101,38 +114,34 @@ target_link_libraries(${PROJECT_NAME}
 #############
 
 # Mark executables and/or libraries for installation
-install(
-    TARGETS ${PROJECT_NAME} ${PROJECT_NAME}_core
-    ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-    LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-    RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
+#install(
+#    TARGETS ${PROJECT_NAME} ${PROJECT_NAME}
+#    ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+#    LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+#    RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+#)
 
 # Mark cpp header files for installation
-install(
-    DIRECTORY include/${PROJECT_NAME}/
-    DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
-    FILES_MATCHING PATTERN "*.hpp"
-)
+#install(
+#    DIRECTORY include/${PROJECT_NAME}/
+#    DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+#    FILES_MATCHING PATTERN "*.hpp"
+#)
 
 # Mark other files for installation
-install(
-    DIRECTORY doc
-    DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+#install(
+#    DIRECTORY doc
+#    DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+#)
+install(DIRECTORY launch
+        DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 )
 
 #############
 ## Testing ##
 #############
 
-if (${CATKIN_ENABLE_TESTING})
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread")
-  ## Add gtest based cpp test target and link libraries
-  catkin_add_gtest(${PROJECT_NAME}-test
-      test/test_ros_package_template.cpp
-      test/AlgorithmTest.cpp)
-  target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME}_core)
-endif ()
+
 
 ##########################
 ## Static code analysis ##

@@ -1,111 +1,28 @@
-#include <effort_controllers/use_pid_control.h>
+#include "hero_chassis_controller/use_pid_control.h"
 #include <pluginlib/class_list_macros.hpp>
+//setCommandCB
 
+namespace hero_control_4 {
 
-namespace effort_controllers {
-
-JointVelocityController::JointVelocityController()
-: command_(0), loop_count_(0)
-{}
-
-JointVelocityController::~JointVelocityController()
-{
-  sub_command_.shutdown();
-}
-
-bool JointVelocityController::init(hardware_interface::EffortJointInterface *robot,
-  const std::string &joint_name, const control_toolbox::Pid &pid)
-{
-  pid_controller_ = pid;
-
-  // Get joint handle from hardware interface
+// 初始化：分配硬件句柄，加载PID参数
+bool WheelController::init(hardware_interface::EffortJointInterface* robot,
+          ros::NodeHandle& n,
+          const std::string& joint_name) {
   joint_ = robot->getHandle(joint_name);
-
-  return true;
-}
-
-bool JointVelocityController::init(hardware_interface::EffortJointInterface *robot, ros::NodeHandle &n)
-{
-  // Get joint name from parameter server
-  std::string joint_name;
-  if (!n.getParam("joint", joint_name)) {
-    ROS_ERROR("No joint given (namespace: %s)", n.getNamespace().c_str());
-    return false;
-  }
-
-  // Get joint handle from hardware interface
-  joint_ = robot->getHandle(joint_name);
-
-  // Load PID Controller using gains set on parameter server
-  if (!pid_controller_.init(ros::NodeHandle(n, "pid")))
-    return false;
-
-  // Start realtime state publisher
+  // 注意这里，直接把命名空间传给它自己
+  if (!pid_.init(ros::NodeHandle(n, "pid/" + joint_name)))
+  return false;
   controller_state_publisher_.reset(
-    new realtime_tools::RealtimePublisher<control_msgs::JointControllerState>
-    (n, "state", 1));
-
-  // Start command subscriber
-  sub_command_ = n.subscribe<std_msgs::Float64>("command", 1, &JointVelocityController::setCommandCB, this);
-
+  new realtime_tools::RealtimePublisher<control_msgs::JointControllerState>
+  (n, joint_name+"/state", 1));
   return true;
 }
 
-void JointVelocityController::setGains(const double &p, const double &i, const double &d, const double &i_max, const double &i_min, const bool &antiwindup)
-{
-  pid_controller_.setGains(p,i,d,i_max,i_min,antiwindup);
-}
-
-void JointVelocityController::getGains(double &p, double &i, double &d, double &i_max, double &i_min, bool &antiwindup)
-{
-  pid_controller_.getGains(p,i,d,i_max,i_min,antiwindup);
-}
-
-void JointVelocityController::getGains(double &p, double &i, double &d, double &i_max, double &i_min)
-{
-  bool dummy;
-  pid_controller_.getGains(p,i,d,i_max,i_min,dummy);
-}
-
-void JointVelocityController::printDebug()
-{
-  pid_controller_.printValues();
-}
-
-std::string JointVelocityController::getJointName()
-{
-  return joint_.getName();
-}
-
-// Set the joint velocity command
-void JointVelocityController::setCommand(double cmd)
-{
-  command_ = cmd;
-}
-
-// Return the current velocity command
-void JointVelocityController::getCommand(double& cmd)
-{
-  cmd = command_;
-}
-
-void JointVelocityController::starting(const ros::Time& time)
-{
-  command_ = 0.0;
-  pid_controller_.reset();
-}
-
-void JointVelocityController::update(const ros::Time& time, const ros::Duration& period)
-{
+ // 单个轮子的计算逻辑
+void WheelController::update(const ros::Time& time, const ros::Duration& period) {
   double error = command_ - joint_.getVelocity();
-
-  // Set the PID error and compute the PID command with nonuniform time
-  // step size. The derivative error is computed from the change in the error
-  // and the timestep dt.
-  double commanded_effort = pid_controller_.computeCommand(error, period);
-
-  joint_.setCommand(commanded_effort);
-
+  double effort = pid_.computeCommand(error, period);
+  joint_.setCommand(effort);
   if(loop_count_ % 10 == 0)
   {
     if(controller_state_publisher_ && controller_state_publisher_->trylock())
@@ -115,28 +32,100 @@ void JointVelocityController::update(const ros::Time& time, const ros::Duration&
       controller_state_publisher_->msg_.process_value = joint_.getVelocity();
       controller_state_publisher_->msg_.error = error;
       controller_state_publisher_->msg_.time_step = period.toSec();
-      controller_state_publisher_->msg_.command = commanded_effort;
-
-      double dummy;
-      bool antiwindup;
-      getGains(controller_state_publisher_->msg_.p,
-        controller_state_publisher_->msg_.i,
-        controller_state_publisher_->msg_.d,
-        controller_state_publisher_->msg_.i_clamp,
-        dummy,
-        antiwindup);
-      controller_state_publisher_->msg_.antiwindup = static_cast<char>(antiwindup);
+      controller_state_publisher_->msg_.command = effort;
       controller_state_publisher_->unlockAndPublish();
     }
   }
   loop_count_++;
 }
 
-void JointVelocityController::setCommandCB(const std_msgs::Float64ConstPtr& msg)
+
+
+  //对类的初始化->
+ChassisController::ChassisController() {
+
+}
+ChassisController::~ChassisController()
 {
-  command_ = msg->data;
+  sub_command_.shutdown();
+}
+
+bool ChassisController::init(hardware_interface::EffortJointInterface *robot, ros::NodeHandle &n)
+{
+  // Get joint name from parameter server
+  std::vector<std::string> joint_names;
+  if (!n.getParam("joint_name", joint_names)) {
+    ROS_ERROR("No joint given (namespace: %s)", n.getNamespace().c_str());
+    return false;
+  }
+  left_front_.init(robot, n, joint_names[0]);
+  right_front_.init(robot, n, joint_names[1]);
+  left_back_.init(robot, n, joint_names[2]);
+  right_back_.init(robot, n, joint_names[3]);
+  // Start command subscriber
+  sub_command_ = n.subscribe<std_msgs::Float64>("command", 1, &ChassisController::setCommandCB, this);
+
+  return true;
+}
+/*
+void ChassisController::setGains(const double &p, const double &i, const double &d, const double &i_max, const double &i_min, const bool &antiwindup)
+{
+  pid_controller_.setGains(p,i,d,i_max,i_min,antiwindup);
+}
+
+void ChassisController::getGains(double &p, double &i, double &d, double &i_max, double &i_min, bool &antiwindup)
+{
+  pid_controller_.getGains(p,i,d,i_max,i_min,antiwindup);
+}
+
+void ChassisController::getGains(double &p, double &i, double &d, double &i_max, double &i_min)
+{
+  bool dummy;
+  pid_controller_.getGains(p,i,d,i_max,i_min,dummy);
+}
+
+void ChassisController::printDebug()
+{
+  pid_controller_.printValues();
+}
+
+std::string ChassisController::getJointName()
+{
+  return joint_.getName();
+}
+
+// Set the joint velocity command
+void ChassisController::setCommand(double cmd)
+{
+  command_ = cmd;
+}
+
+// Return the current velocity command
+void ChassisController::getCommand(double& cmd)
+{
+  cmd = command_;
+}
+*/
+void ChassisController::starting(const ros::Time& time)
+{
+}
+
+void ChassisController::update(const ros::Time& time, const ros::Duration& period)
+{
+  left_front_.update(time, period);
+  right_front_.update(time, period);
+  left_back_.update(time, period);
+  right_back_.update(time, period);
+}
+
+void ChassisController::setCommandCB(const std_msgs::Float64ConstPtr& msg)
+{
+  left_front_.command_ = msg->data;
+  right_front_.command_ = msg->data;
+  left_back_.command_ = msg->data;
+  right_back_.command_ = msg->data;
 }
 
 } // namespace
 
-PLUGINLIB_EXPORT_CLASS( effort_controllers::JointVelocityController, controller_interface::ControllerBase)
+PLUGINLIB_EXPORT_CLASS( hero_control_4::ChassisController, controller_interface::ControllerBase)
