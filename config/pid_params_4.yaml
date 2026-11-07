@@ -6,7 +6,7 @@ joint_state_controller:
 chassis_controller:
   type: hero_chassis_controller/ChassisController
   # 这里是你传给主控制器的四个名字
-  use_world_frame: true
+  use_world_frame: false
   joint_name: ["left_front_wheel_joint", "right_front_wheel_joint", "left_back_wheel_joint", "right_back_wheel_joint"]
 
   pid:

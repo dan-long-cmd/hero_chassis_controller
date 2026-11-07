@@ -96,6 +96,8 @@ bool ChassisController::init(hardware_interface::EffortJointInterface *effort_jo
     ROS_ERROR("No joint given (namespace: %s)", n.getNamespace().c_str());
     return false;
   }
+    //将xml的use_world_frame参数给到cpp文件里面的use_world_frame_mode_
+    n.param<bool>("use_world_frame", use_world_frame_mode_, false);
     //将各个轮子初始化
   left_front_.init(effort_joint_interface, n, joint_names[0]);
   right_front_.init(effort_joint_interface, n, joint_names[1]);
@@ -110,6 +112,9 @@ bool ChassisController::init(hardware_interface::EffortJointInterface *effort_jo
     new realtime_tools::RealtimePublisher<nav_msgs::Odometry>
     (n, "/odom", 10));
 
+    //tf
+    tf_buffer_ = std::make_shared<tf2_ros::Buffer>();
+    tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
   return true;
 }
 
@@ -176,10 +181,55 @@ void ChassisController::update(const ros::Time& time, const ros::Duration& perio
     }
   }
   loop_count_++;
+
+
+
+
+
+
 }
 //回调函数：设置新的速度
 void ChassisController::setCommandCB(const geometry_msgs::Twist::ConstPtr& msg)
 {
+    double vx = msg->linear.x;
+    double vy = msg->linear.y;
+    double omega = msg->angular.z;
+    if (use_world_frame_mode_) {
+      // 1. 先判断能不能查到这个 TF，超时设为 0（不阻塞）
+      // 注意：这里的 "map" 或 "odom" 取决于你任务的要求，通常上层导航发出来的是 map 系
+      if (tf_buffer_ && tf_buffer_->canTransform("base_link", "odom", ros::Time(0))) {
+
+        // 2. 既然能查到，就大胆地用 lookupTransform（不会抛异常）
+        geometry_msgs::TransformStamped tf_odom_to_base =
+            tf_buffer_->lookupTransform("base_link", "odom", ros::Time(0));
+
+        // 3. 构造 Vector3Stamped 进行向量变换
+        geometry_msgs::Vector3Stamped vel_in_odom, vel_in_base;
+        vel_in_odom.vector.x = vx;
+        vel_in_odom.vector.y = vy;
+        vel_in_odom.vector.z = 0.0;
+
+        // 核心：使用 tf2 提供的 doTransform 进行向量转换
+        tf2::doTransform(vel_in_odom, vel_in_base, tf_odom_to_base);
+
+        // 4. 赋值给底盘速度
+        cmd_vx_body_ = vel_in_base.vector.x;
+        cmd_vy_body_ = vel_in_base.vector.y;
+        cmd_wz_body_ = omega; // 角速度不变
+      } else {
+        // 如果 TF 没建好，为了安全，这一帧指令直接丢弃，或者默认为 0
+        ROS_WARN_THROTTLE(1.0, "TF odom->base_link not found yet!");
+        cmd_vx_body_ = 0.0;
+        cmd_vy_body_ = 0.0;
+        cmd_wz_body_ = 0.0;
+      }
+    } else {
+      // 底盘坐标系速度模式，直接使用
+      cmd_vx_body_ = vx;
+      cmd_vy_body_ = vy;
+      cmd_wz_body_ = omega;
+    }
+
   double command[4] = {0};
     //逆运动解算
   inverse_kinematics(msg->linear.x, msg->linear.y, msg->angular.z, command);

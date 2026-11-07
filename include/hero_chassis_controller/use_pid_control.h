@@ -16,7 +16,9 @@
 #include <tf2_ros/transform_broadcaster.h>
 #include <geometry_msgs/TransformStamped.h>
 #include <tf2/LinearMath/Quaternion.h>
-
+#include <tf2_ros/buffer.h>
+#include <tf2_ros/transform_listener.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
 namespace hero_control_4
 {
@@ -82,6 +84,16 @@ private:
   void setCommandCB(const geometry_msgs::Twist::ConstPtr& msg);//设置速度
   int loop_count_;
   tf2_ros::TransformBroadcaster tf_broadcaster_;
+  bool use_world_frame_mode_;
+
+
+
+  // 在 ChassisController 类定义的 private: 下面
+  std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
+  std::shared_ptr<tf2_ros::TransformListener> tf_listener_;
+  double cmd_vx_body_ = 0.0;
+  double cmd_vy_body_ = 0.0;
+  double cmd_wz_body_ = 0.0;
 
 };
 } // namespace
