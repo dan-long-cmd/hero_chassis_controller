@@ -6,37 +6,38 @@ joint_state_controller:
 chassis_controller:
   type: hero_chassis_controller/ChassisController
   # 这里是你传给主控制器的四个名字
+  use_world_frame: true
   joint_name: ["left_front_wheel_joint", "right_front_wheel_joint", "left_back_wheel_joint", "right_back_wheel_joint"]
 
   pid:
     left_front_wheel_joint:
-      p: 1.0
-      i: 0.1
-      d: 0.05
+      p: 5.0
+      i: 0.0
+      d: 0.00
       i_clamp_min: -1.0
       i_clamp_max: 1.0
       antiwindup: true
 
     right_front_wheel_joint:
-      p: 1.0
-      i: 0.1
-      d: 0.05
+      p: 5.0
+      i: 0.0
+      d: 0.00
       i_clamp_min: -1.0
       i_clamp_max: 1.0
       antiwindup: true
 
     left_back_wheel_joint:
-      p: 1.0
-      i: 0.1
-      d: 0.05
+      p: 5.0
+      i: 0.0
+      d: 0.00
       i_clamp_min: -1.0
       i_clamp_max: 1.0
       antiwindup: true
 
     right_back_wheel_joint:
-      p: 1.0
-      i: 0.1
-      d: 0.05
+      p: 5.0
+      i: 0.0
+      d: 0.00
       i_clamp_min: -1.0
       i_clamp_max: 1.0
       antiwindup: true

@@ -23,6 +23,10 @@ find_package(catkin REQUIRED
     realtime_tools
     control_msgs
     realtime_tools
+    geometry_msgs
+    nav_msgs
+    tf2
+    tf2_ros
     )
 
 ## Find system libraries
@@ -56,6 +60,10 @@ catkin_package(
     control_msgs
     realtime_tools
     std_msgs
+    geometry_msgs
+    nav_msgs
+    tf2
+        tf2_ros
     DEPENDS
     ## find_package(Eigen3) provides a non standard EIGEN3_INCLUDE_DIR instead of Eigen3_INCLUDE_DIRS.
     ## Therefore, the DEPEND does not work as expected and we need to add the directory to the INCLUDE_DIRS
